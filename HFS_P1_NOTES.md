@@ -22,6 +22,7 @@ fork 自 [`huangserva/xyz-video-skill`](https://github.com/huangserva/xyz-video-
 - `video_references` 用途协议映射 H3：P1 走 i2v（r2v/fl2v 见 P2）
 - H3 自带音频**不再 mute 一扔**（`generate_audio: true`）
 - 自检：`py_compile` + yaml 接线断言通过
+- **P1f 冒烟通过**（2026-08-09）：`video_h3` 经 xyz provider 契约驱动本地 H3 出片，普通剧情片（红袍女子走入院子，非 NSFW）124f/5.08s、**video+audio 双流**、turbo 4 步 ~80s。证明骨架→本地引擎→出片端到端通。
 
 ## 怎么跑（需本地 ComfyUI）
 
@@ -34,7 +35,7 @@ ssh -fN -o ExitOnForwardFailure=yes -L 18190:127.0.0.1:8190 -L 18188:127.0.0.1:8
 
 ## 待办
 
-- **P1f 冒烟**：跑通一条普通剧情片，验证 story→framework→storyboard→本地生成→compose 端到端
+- **P1f 冒烟** ✅ provider 层已通（见上）；剩 story→framework→storyboard→compose 全 pipeline 端到端串跑
 - **P2 NSFW profile**：profile 开关翻转 `content_filter` + 挂 HMNSFW/Booster + prompt 走 register 八段式；Krea i2i（角色参考图锁身份）；r2v/fl2v 模式
 - **P3 音频工程**：官方六列音频轨 + H3 自带人声 + CosyVoice3 旁白（mouth-closed）+ media-use Foley/BGM 混音（移植 adult skill 的 `references/audio-track.md`）
 - **P4 金瓶梅重跑验证**：带 xyz 的 `subject_constraints`/`consistency_anchors`，治 K09 男相漂移
