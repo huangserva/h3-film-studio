@@ -1,0 +1,19 @@
+# Secrets
+config/api_keys.yaml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+
+# Output
+output/
+*.mp4
+*.wav
+*.mp3
+
+# Local planning docs
+IMPLEMENTATION_PLAN.md

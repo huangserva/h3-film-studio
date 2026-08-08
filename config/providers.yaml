@@ -1,0 +1,132 @@
+# API Provider 配置
+providers:
+  byteplus:
+    api_base: "https://ark.ap-southeast.bytepluses.com/api/v3"
+  evolink:
+    api_base: "https://api.evolink.ai"
+  volcengine:
+    api_base: "https://ark.cn-beijing.volces.com/api/v3"
+  apimart:
+    api_base: "https://api.apimart.ai/v1"
+  fal:
+    api_base: "https://queue.fal.run"
+  openrouter:
+    api_base: "https://openrouter.ai/api/v1"
+
+# 各功能模块的模型和参数配置
+models:
+  video:
+    # h3-film-studio 默认走本地 H3；云端 seedance 块保留备用（把 local_h3 换成 volcengine_seedance2 即切回）
+    fallback_chain: [local_h3]
+    max_retries: 2
+    retry_delay: 5
+    review_mode: metrics_only
+    review:
+      metrics_only:
+        metrics_profile: relaxed
+      hybrid_judge:
+        metrics_profile: strict
+        export_risk_bundle: true
+      director_review:
+        metrics_profile: strict
+        max_retries: 3
+        retry_delay: 2
+    # ===== 本地 MiniMax-H3（ComfyUI）视频后端 =====
+    local_h3:
+      endpoint: "http://127.0.0.1:18190"   # SSH 隧道；盒上直跑改 8190
+      supports_multi_reference: true       # r2v 多参考（P2）
+      supports_keyframes: true
+      max_reference_images: 6
+      generate_audio: true                 # H3 自带音频，禁止 mute 一扔
+      width: 480
+      height: 864
+      fps: 24
+      turbo: true                          # 默认 4 步 turbo（80s/124f）
+      steps: 4
+      # loras 空 = 普通片仅 turbo；NSFW profile 覆盖为 HMNSFW+Booster：
+      #   - ["HMNSFW_AIO_V2.safetensors", 0.5]
+      #   - ["H3_Motion_Booster.safetensors", 0.6]
+      loras: []
+      profile: default
+      min_duration: 2
+      max_duration: 15
+      poll_interval: 6
+      poll_max_attempts: 120
+
+    volcengine_seedance2:
+      provider: volcengine
+      model: "doubao-seedance-2-0-fast-260128"
+      supports_multi_reference: true
+      supports_keyframes: true
+      max_reference_images: 9
+      ratio: "16:9"
+      resolution: "720p"
+      generate_audio: true
+      watermark: false
+      min_duration: 4
+      max_duration: 15
+      poll_interval: 5
+      poll_max_attempts: 120
+      submit_timeout: 30
+      poll_timeout: 15
+    byteplus:
+      model: "seedance-1-5-pro-251215"
+      supports_multi_reference: false
+      supports_keyframes: false
+      max_reference_images: 2
+      ratio: "16:9"
+      resolution: "720p"
+      generate_audio: true
+      min_duration: 5
+      max_duration: 12
+      poll_interval: 5
+      poll_max_attempts: 60
+      submit_timeout: 30
+      poll_timeout: 15
+
+  image:
+    # h3-film-studio 默认走本地 Krea2；云端块保留备用
+    fallback_chain: [local_krea]
+    local_krea:
+      endpoint: "http://127.0.0.1:18188"   # SSH 隧道；盒上直跑改 8188
+      width: 720
+      height: 1280
+      lora: "krea2_lora 通行证刀斧手版.safetensors"
+      lora_strength: 0.5
+      poll_interval: 1.5
+      poll_max_attempts: 120
+    volcengine:
+      model: "doubao-seedream-4-0-250828"
+      size: "2K"
+      response_format: "url"
+      watermark: true
+      timeout: 120
+    apimart:
+      model: "gemini-3.1-flash-image-preview"
+      timeout: 180
+      poll_interval: 5
+      poll_max_attempts: 30
+    fal:
+      num_inference_steps: 4
+      num_images: 1
+      timeout: 180
+      poll_interval: 1
+      poll_max_attempts: 90
+
+  bgm:
+    provider: fal
+    endpoint: "/fal-ai/minimax-music/v2"
+    timeout: 240
+    poll_interval: 1
+    poll_max_attempts: 120
+
+  llm:
+    provider: apimart
+    model: "gemini-2.5-flash"
+    timeout: 120
+
+  vision_judge:
+    provider: apimart
+    model: "gemini-2.5-flash"
+    enabled: false
+    max_frames_per_segment: 5
