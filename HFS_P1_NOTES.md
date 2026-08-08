@@ -33,9 +33,14 @@ ssh -fN -o ExitOnForwardFailure=yes -L 18190:127.0.0.1:8190 -L 18188:127.0.0.1:8
 
 `providers.yaml` 的 `local_h3.endpoint` / `local_krea.endpoint` 默认指隧道端口（18190/18188）；盒上直跑改 8190/8188。
 
+## P2/P3/P4 进展（2026-08-09，《金瓶梅·夜宴》62s 验证）
+
+- **P2 NSFW profile** ✅ 见 [`reference/nsfw-profile.md`](reference/nsfw-profile.md)：LoRA 栈（合戏 HMNSFW 0.5+Booster 0.6，文戏轻）+ register 八段式（[`reference/hmnsfw-register.md`](reference/hmnsfw-register.md)）+ 身份锁。**男相漂移根治**（用 v3 自洽批次 + 男主造型复述）。
+- **P3 音频工程** ✅ 见 [`reference/audio-track.md`](reference/audio-track.md)：四层三落地——H3 自带合戏人声 + CosyVoice3 旁白（mouth-closed）+ 夜景 Foley，音画对齐。BGM 缺源待加。
+- **P4 金瓶梅重跑** ✅ v3 自洽批次 12 段，硬核合戏 motion 3.6–6.3，身份连贯，四层音频，62s 成片。
+
 ## 待办
 
-- **P1f 冒烟** ✅ provider 层已通（见上）；剩 story→framework→storyboard→compose 全 pipeline 端到端串跑
-- **P2 NSFW profile**：profile 开关翻转 `content_filter` + 挂 HMNSFW/Booster + prompt 走 register 八段式；Krea i2i（角色参考图锁身份）；r2v/fl2v 模式
-- **P3 音频工程**：官方六列音频轨 + H3 自带人声 + CosyVoice3 旁白（mouth-closed）+ media-use Foley/BGM 混音（移植 adult skill 的 `references/audio-track.md`）
-- **P4 金瓶梅重跑验证**：带 xyz 的 `subject_constraints`/`consistency_anchors`，治 K09 男相漂移
+- content_filter profile 开关（成人模式翻转 NSFW 过滤）；跑通母模型 story→framework→storyboard→compose 全 pipeline（当前用独立跑批脚本绕过）
+- `local_providers.video_h3` 打开 r2v/fl2v 模式（多参考/尾帧）；Krea i2i 角色参考锁身份
+- BGM 第四层音源
