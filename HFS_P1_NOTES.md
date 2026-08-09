@@ -39,8 +39,12 @@ ssh -fN -o ExitOnForwardFailure=yes -L 18190:127.0.0.1:8190 -L 18188:127.0.0.1:8
 - **P3 音频工程** ✅ 见 [`reference/audio-track.md`](reference/audio-track.md)：四层三落地——H3 自带合戏人声 + CosyVoice3 旁白（mouth-closed）+ 夜景 Foley，音画对齐。BGM 缺源待加。
 - **P4 金瓶梅重跑** ✅ v3 自洽批次 12 段，硬核合戏 motion 3.6–6.3，身份连贯，四层音频，62s 成片。
 
+## 叙事成人片方法论（2026-08-09《金瓶梅·夜宴》119s 定版）
+
+一部有戏的成人片 = 完整叙事 + 人物逻辑 + 表情博弈 + 对白，不是三段硬拼。**做叙事成人片先读 [`reference/narrative-adult-film.md`](reference/narrative-adult-film.md)**：六幕结构、金瓶梅欲擒故纵人物逻辑、i2v慢镜/fl2v表情戏/chain交欢的手法映射、对白配音、四层音频、工程坑。fl2v 表情戏 graph 见 [`scripts/fl2v_build.py`](scripts/fl2v_build.py)（微表情博弈 i2v 演不动0.3，fl2v 首尾差大补心理转变1.3-2.2）。定版 `~/Desktop/jinpingmei_i2v/final/jinpingmei_yeyan_full_v4.mp4`。
+
 ## 待办
 
 - content_filter profile 开关（成人模式翻转 NSFW 过滤）；跑通母模型 story→framework→storyboard→compose 全 pipeline（当前用独立跑批脚本绕过）
 - `local_providers.video_h3` 打开 r2v/fl2v 模式（多参考/尾帧）；Krea i2i 角色参考锁身份
-- BGM 第四层音源
+- BGM 第四层音源；交欢段分块 chain 恢复体位变化
