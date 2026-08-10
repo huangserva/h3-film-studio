@@ -48,3 +48,9 @@ ssh -fN -o ExitOnForwardFailure=yes -L 18190:127.0.0.1:8190 -L 18188:127.0.0.1:8
 - content_filter profile 开关（成人模式翻转 NSFW 过滤）；跑通母模型 story→framework→storyboard→compose 全 pipeline（当前用独立跑批脚本绕过）
 - `local_providers.video_h3` 打开 r2v/fl2v 模式（多参考/尾帧）；Krea i2i 角色参考锁身份
 - BGM 第四层音源；交欢段分块 chain 恢复体位变化
+
+## ⚠️ 动手前必读：项目意图铁律
+
+做金瓶梅（或任何叙事成人片）之前，**先读 [`reference/INTENT-jinpingmei.md`](reference/INTENT-jinpingmei.md)**——
+黄佬反复强调过的人物设定、剧情铁律、技术铁律、以及我反复犯的错。
+项目现场副本：`~/Desktop/jinpingmei_i2v/INTENT.md`。
