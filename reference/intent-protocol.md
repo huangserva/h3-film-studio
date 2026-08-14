@@ -34,10 +34,12 @@ cp ~/.claude/skills/h3-film-studio/templates/INTENT.template.md <项目目录>/I
 ### 规则 3：动手前先读
 
 以下动作**之前**必须先 Read `INTENT.md`：
-- 设计/修改分镜表
+- 设计/修改分镜表 / `shot_table.json`
 - 写生成 prompt
 - 跑批生成
 - 交付成片前自检
+
+另：**跑批生成之前**还必须 `preflight_continuity.py` exit 0（见 `continuity-gate.md`）。无状态机门禁 = 手搓，视为协议失败。
 
 ---
 

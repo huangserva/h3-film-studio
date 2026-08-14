@@ -41,8 +41,11 @@
 ### 镜头
 -
 
-### 衔接
--
+### 衔接（硬门，见 continuity-gate.md）
+- 必须先有 `shot_table.json`，且 `preflight_continuity.py` exit 0
+- 相邻镜：上一镜 end 姿态/道具 = 下一镜 start
+- 坐↔站等大变：gen_mode = fl2v 或 chain，禁止 i2v_solo 独立母图
+- 禁止用剪辑掩盖姿态跳
 
 ### 一致性
 -

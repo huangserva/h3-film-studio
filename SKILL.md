@@ -1,21 +1,54 @@
 ---
 name: h3-film-studio
-description: "视频生成 skill。对话驱动的端到端视频生成流程：输入主题或故事，完成角色设计、剧本框架、分镜脚本、素材生成与视频合成。"
+description: "视频生成 skill（H3/Krea 本地为主）。主题→意图→姿态状态机→分镜→出片。强制 INTENT + shot_table preflight；禁止跳过状态机手搓独立母图。"
 ---
 
-# XYZ Video Skill
+# h3-film-studio
 
-## 步骤0（强制先做）：意图保全 —— 建立/更新 INTENT.md
+> 成人/剧情/电影共用本 skill。旧 `adult-krea2-h3-narrative` 仅作历史参考，**新片只认本目录**。
 
-**这是本 skill 的第一条流程，不许跳过。** 详见 [`reference/intent-protocol.md`](reference/intent-protocol.md)。
+## 违禁清单（出现即流程失败）
 
-1. **项目开始**：在项目目录建 `INTENT.md`（模板 `templates/INTENT.template.md`），写下用户的人物设定、剧情铁律、技术铁律、判断标准。
-2. **用户每次纠正 → 立即写进 `INTENT.md`**（用他的原话，不要转译）。
-   触发词警报：**「我说过了」「说过无数次」「你又忘了」「不是这样」** —— 出现即说明意图已丢失一次，必须当场补写文件，不能只是口头认错。
-3. **每次动手前先 Read `INTENT.md`**：设计分镜、写 prompt、跑批、交付自检，四个动作之前都要读。
-4. **交付前过自检门**：逐条对照 INTENT，人物走样/剧情缺环/技术违规/重犯旧错 —— 任一条不过就不许交付。
+- ❌ 无 `INTENT.md` 就出图/出视频  
+- ❌ 无 `shot_table.json` 或 **preflight 未 exit 0** 就调 H3/Krea  
+- ❌ 独立母图堆叠 + 纯 i2v 硬拼（坐站不继承）  
+- ❌ 坐↔站大变却 `gen_mode=i2v_solo`（必须 **fl2v 首尾** 或 **chain**）  
+- ❌ 用剪辑溶解掩盖姿态跳  
+- ❌ 直接复制 `/tmp/**/scratchpad` 旁路当主路径且不跑 preflight  
 
-> 模型会忘，文件不会。把"记住用户要什么"变成强制的文件操作，而不是依赖记忆。
+**为什么会手搓、怎么解：** 见 [`reference/anti-handroll.md`](reference/anti-handroll.md)。
+
+---
+
+## 步骤0（强制）：意图保全 —— INTENT.md
+
+**不许跳过。** 全文：[`reference/intent-protocol.md`](reference/intent-protocol.md)。
+
+1. 项目开始：建 `INTENT.md`（模板 `templates/INTENT.template.md`）。
+2. 用户每次纠正 → **立即**写入 INTENT（原话）。
+3. 分镜 / prompt / 跑批 / 交付前必须先 Read INTENT。
+4. 交付前对照 INTENT 自检门。
+
+---
+
+## 步骤0.5（强制）：衔接硬门 —— shot_table + preflight
+
+**没有这一步，禁止任何生成。** 全文：[`reference/continuity-gate.md`](reference/continuity-gate.md)。
+
+1. 写 **`shot_table.json`**（模板 `templates/shot_table.template.json`）：每镜 `start`/`end` 姿态与道具；`gen_mode` ∈ `i2v|fl2v|chain|i2v_solo`。
+2. **相邻镜**：`shots[i].end` 必须等于 `shots[i+1].start`（同名字段）。
+3. **镜内坐↔站等大变**：`gen_mode` 必须是 `fl2v`（首尾帧）或 `chain`（上镜真尾帧续），禁止手搓独立 i2v。
+4. 跑门禁（必须 exit 0）：
+
+```bash
+python3 ~/.claude/skills/h3-film-studio/scripts/preflight_continuity.py \
+  --table <项目目录>/shot_table.json \
+  --strict-pose-change
+```
+
+5. 通过后才：出母图（匹配 start/end）→ H3 → 拼接。
+
+> 剧本层先锁状态机；锁不住的姿态差用 **首尾帧 fl2v / chain** 硬保证——不是事后审计。
 
 ---
 

@@ -1,0 +1,90 @@
+{
+  "title": "示例：对坐威胁两镜（preflight 应通过）",
+  "project_dir": "示例路径",
+  "notes": "pose 用枚举 sit|stand|lie|kneel|offscreen|na；相邻 end 必须等于下一镜 start",
+  "pose_enum": ["sit", "stand", "lie", "kneel", "offscreen", "na"],
+  "gen_mode_enum": ["i2v", "i2v_solo", "fl2v", "chain"],
+  "shots": [
+    {
+      "id": "k01",
+      "duration_frames": 192,
+      "start": {
+        "man": "sit",
+        "woman": "sit",
+        "prop_silver": "table",
+        "blocking": "table_two_shot"
+      },
+      "end": {
+        "man": "sit",
+        "woman": "sit",
+        "prop_silver": "table",
+        "blocking": "table_two_shot"
+      },
+      "action": "man pushes silver; threat line",
+      "gen_mode": "i2v",
+      "chain_from_previous": false,
+      "has_dialogue": true
+    },
+    {
+      "id": "k02",
+      "duration_frames": 124,
+      "start": {
+        "man": "sit",
+        "woman": "sit",
+        "prop_silver": "table",
+        "blocking": "table_two_shot"
+      },
+      "end": {
+        "man": "sit",
+        "woman": "sit",
+        "prop_silver": "table",
+        "blocking": "table_two_shot"
+      },
+      "action": "her CU reaction; same world state, tighter lens only",
+      "gen_mode": "i2v",
+      "chain_from_previous": false,
+      "has_dialogue": false
+    },
+    {
+      "id": "k07",
+      "duration_frames": 243,
+      "start": {
+        "man": "sit",
+        "woman": "sit",
+        "prop_silver": "table",
+        "blocking": "table_two_shot"
+      },
+      "end": {
+        "man": "stand",
+        "woman": "sit",
+        "prop_silver": "table",
+        "blocking": "man_beside_seated_woman"
+      },
+      "action": "man stands and walks to her; she stays seated",
+      "gen_mode": "fl2v",
+      "chain_from_previous": false,
+      "has_dialogue": false,
+      "notes": "坐→站大变，必须 fl2v 首尾，禁止 i2v_solo"
+    },
+    {
+      "id": "k08",
+      "duration_frames": 192,
+      "start": {
+        "man": "stand",
+        "woman": "sit",
+        "prop_silver": "table",
+        "blocking": "man_beside_seated_woman"
+      },
+      "end": {
+        "man": "stand",
+        "woman": "stand",
+        "prop_silver": "table",
+        "blocking": "both_standing_close"
+      },
+      "action": "pulls her up from sit to stand",
+      "gen_mode": "fl2v",
+      "chain_from_previous": false,
+      "has_dialogue": true
+    }
+  ]
+}
