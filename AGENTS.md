@@ -28,9 +28,11 @@
 | ComfyUI-H3 | `newgpu:8190` | 视频（i2v/fl2v/chain）+ T8 multi-rate 音频 |
 | ComfyUI-Krea2 | `newgpu:8188` | 母图 + Qwen-Image-Edit-2511 身份锁 |
 
-**共卡纪律（这台 4090 与他人共用 48GB）**
-- 只 `POST /free` **自己实例**的模型缓存；**绝不 kill 他人进程**
-- 每个任务前轮询显存，够 ~17GB 才开跑（长镜更多）
+**显存秩序（2026-08-24 定版：H3 主人 / Krea 客人 / Qwen 已下架）**
+- **H3 = 主人**：`h3.service` 常驻（lowvram + headroom 8 + Sage attention），长镜峰值 ~26.6G
+- **Krea = 客人**：`krea2.service`（--lowvram，借 H3 venv），出图峰值 30.6G → **必须错峰**：出图一律走 `scripts/deploy/gpu_arbiter.py` 的 `krea_slot()`（等 H3 空闲 → 出图 → 自动 /free 归还）
+- Qwen LLM 已 stop+disable（恢复：`systemctl --user start qwen38-q4-20g frpc-qwen38`）
+- 状态一眼看：`ssh newgpu 'bash ~/gpu_status.sh'`；部署档案见 `scripts/deploy/README.md`
 - 连接：`rsync + ssh ControlMaster`；盒上跑脚本用 `setsid ... < /dev/null &`，启动后 `pgrep` 确认
 
 ---
