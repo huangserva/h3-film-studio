@@ -6,7 +6,9 @@
 
 ---
 
-## Phase 0 · 收口威逼场样板（当前，差 3 件事）
+## Phase 0 · 收口威逼场样板（当前）
+
+> **cu130 提速已落地（2026-08-24）**：5秒片 95s→49s（−48%），零质量损失，全网调研见 `reference/h3-optimization-research-2026-08-24.md`。免费升级堆（T8 v1.45 / ComfyUI master / LoRA 五连）待做。
 
 威逼场 10 镜是全套新方法的第一个完整样板：人物锁(Qwen-Edit) + 状态机(preflight) + fl2v 姿态大变 + 闭嘴母图 + 时长按内容。
 
