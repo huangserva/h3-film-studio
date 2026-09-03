@@ -98,6 +98,37 @@ def compile_fl2va(*, frames: int, style: str, anchor: str, beats: list[str], sou
     return prompt
 
 
+@dataclass
+class Subject:
+    picture: int          # <Picture N> 的 N（1 起）
+    description: str      # 英文外观描述，如 "the young woman in a white robe with long dark hair"
+
+
+def compile_ref2va(*, style: str, anchor: str, beats: list[str], soundscape: str,
+                   subjects: list[Subject], lines: list[Line] | None = None,
+                   silent_subjects: list[str] | None = None,
+                   camera: str = "The camera holds a static shot", music: str = "N/A") -> str:
+    """官方 full-reference 模式（VIDEO_PROMPT_WRITING_GUIDE_ref_en.md）六段格式。
+    每张参考图 <Picture N> 定义一个 <Subject N>，身份 fully_preserved。"""
+    if not subjects:
+        raise ValueError("ref2va 需要至少一个 subject（<Picture N> → <Subject N>）")
+    defs = "\n".join(f"<Subject {i+1}> is {s.description.strip().rstrip('.')} in <Picture {s.picture}>."
+                     for i, s in enumerate(subjects))
+    labels = ", ".join(f"<Subject {i+1}>" for i in range(len(subjects)))
+    summary = f"[reference generation] The target video shows {labels} in a single shot: {anchor.strip().rstrip('.')}."
+    retention = "\n".join(f"<Subject {i+1}> (appears in [Shot 1]): fully_preserved - identity, face, hairstyle, and clothing from <Picture {s.picture}> are retained."
+                          for i, s in enumerate(subjects))
+    body = _body("", anchor, beats, lines, silent_subjects, camera).replace("[Shot 1] , ", "[Shot 1] ", 1)
+    prompt = ("subject_definitions:\n" + defs + "\n\n"
+              "summary:\n" + summary + "\n\n"
+              "retention_analysis:\n" + retention + "\n\n"
+              "detailed_description:\n" + f"The target video is {style.strip().rstrip('.')}.\n" + body + "\n\n"
+              "overall_soundscape:\n" + soundscape.strip() + "\n\n"
+              "non_diegetic_music:\n" + music.strip())
+    _assert_no_chinese_outside_d(prompt)
+    return prompt
+
+
 def density(lines: list[Line], frames: int) -> float:
     """台词密度（字/秒）——低于 1.5 会被乱码填空（2026-08-24 实证）。"""
     n = sum(len(re.sub(r"[，。、！？…\s]", "", l.text)) for l in lines)
@@ -115,11 +146,15 @@ def compile_spec(spec: dict) -> dict:
     if task == "fl2va":
         frames = int(spec["frames"])
         prompt = compile_fl2va(frames=frames, **common)
+    elif task == "ref2va":
+        frames = int(spec.get("frames") or 124)
+        subjects = [Subject(**s) for s in (spec.get("subjects") or [])]
+        prompt = compile_ref2va(subjects=subjects, **common)
     elif task == "i2va":
         frames = int(spec.get("frames") or 124)
         prompt = compile_i2va(**common)
     else:
-        raise ValueError(f"unsupported task {task!r} (i2va|fl2va)")
+        raise ValueError(f"unsupported task {task!r} (i2va|fl2va|ref2va)")
     return {"task": task, "prompt": prompt, "density": round(density(lines, frames), 3) if lines else 0.0}
 
 
@@ -128,7 +163,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="H3 官方格式 prompt 编译器")
     ap.add_argument("--json", action="store_true",
                     help="从 stdin 读 spec JSON，stdout 输出 {task,prompt,density}；违规时 exit 2 + {error,message}。"
-                         " spec: {task:i2va|fl2va, frames, style, anchor, beats[], soundscape, lines[{speaker,who,verb,text,lang?,after?}], silent_subjects[], camera?, music?}")
+                         " spec: {task:i2va|fl2va|ref2va, frames, subjects[{picture,description}] (ref2va), style, anchor, beats[], soundscape, lines[{speaker,who,verb,text,lang?,after?}], silent_subjects[], camera?, music?}")
     args = ap.parse_args()
     if args.json:
         try:

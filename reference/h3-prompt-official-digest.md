@@ -52,6 +52,10 @@ non_diegetic_music: <配器/速度/动态；没有写 N/A>
 | 烧字幕、中文舞台指示被念 | `<d>` 之外有中文 | 正文全英文 |
 | 静默镜嘴动/瞎发声 | 自由文本求"别动嘴"，没有官方句式；给了情绪词却没锁嘴 | 无 `(Sx)`、无 `<d>`，`... remains silent throughout the shot, and her lips remain completely closed.`，soundscape 只写环境声 |
 
+## r2v（参考主体模式）= 官方 full-reference 六段格式
+
+`compile_ref2va(subjects=[Subject(picture=1, description="the young woman in a white robe ...")], ...)` 输出 `subject_definitions / summary / retention_analysis / detailed_description / overall_soundscape / non_diegetic_music` 六段（`VIDEO_PROMPT_WRITING_GUIDE_ref_en.md`），每张参考图 `<Picture N>` 定义一个 `<Subject N>`，身份 `fully_preserved`。CLI：`--json` 的 `task: "ref2va"` + `subjects[]`。H3Storyboard 的 r2v job 走这条。
+
 ## 用法
 
 ```python
