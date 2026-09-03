@@ -38,6 +38,10 @@ non_diegetic_music: <配器/速度/动态；没有写 N/A>
 - 台词跨切：`<scenetrans>`；被片尾截断：`<cutoff>`。
 - 台词密度不再是硬规则：A 组实测（3 字台词配 10 秒镜）官方格式下不再乱码填空，念完就安静。短台词配长镜仍然会让画面"空"，那是导演问题，不是模型问题。
 
+## 说话人描述决定音色（2026-09-03 买鸟记）
+
+旁白/台词的音色不是采样步数决定的，是 `<d>` 外那段说话人描述决定的。写 "warm and unhurried" 就得到温厚偏低的声音；要清亮就写 "clear and bright, light articulate voice, medium-high pitch, crisp diction, close intimate microphone presence"。每部片的旁白音色在 INTENT 里定一句，编译时统一注入。
+
 ## 镜头与运镜
 
 - `[Shot 1]` 无时间戳；后续 `[Shot 2] At 00:03.500, the camera cuts to ...`（严格递增，落在时长内）。**一次生成可以多镜**——对应《黄果》"中位 3.2 秒短镜"节奏，不必一镜一生成。

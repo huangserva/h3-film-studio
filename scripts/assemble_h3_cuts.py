@@ -5,7 +5,7 @@
 1. 每镜裁掉开头 head_trim 秒（H3 音频 t=0 的瞬态 + 死寂；母图静帧无信息），连画带声。
 2. 镜尾死寂只留 tail_keep 秒（用 RMS 窗找最后一个有声窗）。
 3. 用 ebur128 量每镜综合响度，按纯增益对齐到 target LUFS。
-4. 切点做 xfade 秒音频交叉淡化，视频硬切。
+4. 切点做 xfade 秒音频交叉淡化（默认 0.15 s；太长会淡掉下一镜起得早的旁白首字），视频硬切。
 
 用法：
   python3 assemble_h3_cuts.py --clips s01.mp4 s02.mp4 ... --out final.mp4
@@ -57,8 +57,13 @@ def plan_clip(path: str, *, head_trim: float, tail_keep: float, target: float, l
     loud = [t for t, v in rows if v > loud_thresh]
     last_loud = max(loud) if loud else dur
     end = min(dur, last_loud + 0.25 + tail_keep)
+    # 头：裁掉 t=0 的瞬态与死寂，但不许切进人声——最多 head_trim，且停在第一个有声窗前 0.1 s
+    # （t=0 那个窗本身是瞬态，跳过它再找起声点）
+    onset = next((t for t, v in rows if t >= 0.25 and v > loud_thresh), None)
+    # 起声点前留 0.3 s 余量（交叉淡化会再吃掉一点），起声很早的镜干脆不裁头
+    head = head_trim if onset is None else max(0.0, min(head_trim, onset - 0.3))
     gain = target - lufs(path)
-    return {"head": head_trim, "end": round(end, 2), "gain": round(gain, 2), "duration": round(dur, 2)}
+    return {"head": round(head, 2), "end": round(end, 2), "gain": round(gain, 2), "duration": round(dur, 2)}
 
 
 def main() -> None:
@@ -70,7 +75,8 @@ def main() -> None:
     ap.add_argument("--head-trim", type=float, default=0.5)
     ap.add_argument("--tail-keep", type=float, default=0.4)
     ap.add_argument("--target-lufs", type=float, default=-18.0)
-    ap.add_argument("--xfade", type=float, default=0.5)
+    ap.add_argument("--xfade", type=float, default=0.1,
+                    help="切点交叉淡化秒数；不能长，否则会把下一镜起得早的旁白首字淡掉（s15 教训）")
     ap.add_argument("--loud-thresh", type=float, default=-45.0)
     ap.add_argument("--crf", type=int, default=18)
     ap.add_argument("--plan-out", default="")
