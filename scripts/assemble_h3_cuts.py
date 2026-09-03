@@ -66,6 +66,37 @@ def plan_clip(path: str, *, head_trim: float, tail_keep: float, target: float, l
     return {"head": round(head, 2), "end": round(end, 2), "gain": round(gain, 2), "duration": round(dur, 2)}
 
 
+def mix_bgm(dry: str, bgm: str, out: str, *, level_db: float, duck_db: float, loop_xfade: float) -> None:
+    """把一段短配乐循环铺满整片，旁白（dry 音轨）出现时用侧链压缩把配乐压低。
+    配乐只用 H3 自出的音轨；循环接缝交叉淡化；整体淡入淡出。"""
+    total = duration(dry)
+    seg = duration(bgm)
+    reps = int(total // max(seg - loop_xfade, 0.1)) + 2
+    # 用 acrossfade 链把同一段拼成足够长的循环
+    ins = []
+    fc = []
+    for i in range(reps):
+        ins += ["-i", bgm]
+        fc.append(f"[{i}:a]aformat=sample_rates=48000:channel_layouts=stereo[b{i}]")
+    prev = "b0"
+    for i in range(1, reps):
+        nxt = f"l{i}" if i < reps - 1 else "loop"
+        fc.append(f"[{prev}][b{i}]acrossfade=d={loop_xfade}:c1=tri:c2=tri[{nxt}]")
+        prev = nxt
+    if reps == 1:
+        fc.append("[b0]acopy[loop]")
+    fc.append(f"[loop]atrim=0:{total:.3f},asetpts=PTS-STARTPTS,volume={level_db}dB,"
+              f"afade=t=in:st=0:d=1.5,afade=t=out:st={max(total-2.5,0):.3f}:d=2.5[bed]")
+    # 侧链：dry 人声作 key，压配乐；再把人声原样叠回
+    fc.append(f"[bed][{reps}:a]sidechaincompress=threshold=0.02:ratio=8:attack=40:release=600:makeup=1[ducked]")
+    fc.append(f"[ducked][{reps}:a]amix=inputs=2:duration=first:normalize=0[aout]")
+    cmd = ["ffmpeg", "-y", "-v", "error"] + ins + ["-i", dry, "-filter_complex", ";".join(fc),
+           "-map", f"{reps}:v", "-map", "[aout]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", out]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode:
+        raise SystemExit("mix_bgm: " + r.stderr[-800:])
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Assemble H3 shots with head trim, gain match and crossfades")
     ap.add_argument("--clips", nargs="*", default=[])
@@ -80,6 +111,10 @@ def main() -> None:
     ap.add_argument("--loud-thresh", type=float, default=-45.0)
     ap.add_argument("--crf", type=int, default=18)
     ap.add_argument("--plan-out", default="")
+    ap.add_argument("--bgm", default="", help="配乐文件（H3 自出的 mp4/wav），循环铺满整片")
+    ap.add_argument("--bgm-db", type=float, default=-20.0, help="配乐相对 0 dB 的电平（旁白处再由闪避压低）")
+    ap.add_argument("--bgm-duck-db", type=float, default=-10.0, help="旁白出现时配乐再压低的量")
+    ap.add_argument("--bgm-loop-xfade", type=float, default=1.0, help="循环接缝交叉淡化秒数")
     a = ap.parse_args()
 
     clips = list(a.clips)
@@ -106,11 +141,14 @@ def main() -> None:
         fc.append(f"[{prev}][a{i}]acrossfade=d={a.xfade}:c1=tri:c2=tri[{nxt}]")
         prev = nxt
     fc.append("".join(f"[v{i}]" for i in range(len(clips))) + f"concat=n={len(clips)}:v=1:a=0[vout]")
+    dry_out = a.out if not a.bgm else str(pathlib.Path(a.out).with_suffix(".dry.mp4"))
     cmd = ["ffmpeg", "-y", "-v", "error"] + ins + ["-filter_complex", ";".join(fc), "-map", "[vout]", "-map", "[aout]",
-           "-c:v", "libx264", "-crf", str(a.crf), "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-shortest", a.out]
+           "-c:v", "libx264", "-crf", str(a.crf), "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-shortest", dry_out]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode:
         raise SystemExit(r.stderr[-800:])
+    if a.bgm:
+        mix_bgm(dry_out, a.bgm, a.out, level_db=a.bgm_db, duck_db=a.bgm_duck_db, loop_xfade=a.bgm_loop_xfade)
     if a.plan_out:
         json.dump(plans, open(a.plan_out, "w"), indent=1, ensure_ascii=False)
     print(json.dumps({"out": a.out, "clips": len(clips), "duration": round(duration(a.out), 2),
