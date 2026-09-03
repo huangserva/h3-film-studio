@@ -37,6 +37,11 @@
 
 ---
 
+## 产线测试 · 《买鸟记》绘本短片 ✅（2026-09-03）
+
+非成人、水彩绘本、旁白驱动题材，从 PDF 到成片跑通整条线：INTENT → shot_table（多场景 `scene_cut` + `pose_keys`）→ preflight → 绘本插图直接当母图 → 编译器官方格式（画外音 `says in an off-screen voiceover` + 闭唇句）→ `h3_t8_shot.py --batch` → whisper/抽帧三关 → `assemble_h3_cuts.py`（裁头不切人声、纯增益对齐、0.1 s 交叉淡化、H3 自出 BGM 循环 + 侧链闪避）。15 镜旁白一次全对，无字幕。
+沉淀的规律：H3 音频 t=0 瞬态+死寂、镜间响度差、窄动态是本性（步数不改）；旁白音色由说话人描述决定；配乐可由 H3 用空白母图 + `non_diegetic_music` 自出。
+
 ## Phase 1 · 把门④⑤写成代码（治"用户当 QA"）
 
 这几轮的每个错都要变成一道闸（B 线范式：闸进代码、标事故来源）：

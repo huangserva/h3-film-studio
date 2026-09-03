@@ -88,7 +88,9 @@ def mix_bgm(dry: str, bgm: str, out: str, *, level_db: float, duck_db: float, lo
     fc.append(f"[loop]atrim=0:{total:.3f},asetpts=PTS-STARTPTS,volume={level_db}dB,"
               f"afade=t=in:st=0:d=1.5,afade=t=out:st={max(total-2.5,0):.3f}:d=2.5[bed]")
     # 侧链：dry 人声作 key，压配乐；再把人声原样叠回
-    fc.append(f"[bed][{reps}:a]sidechaincompress=threshold=0.02:ratio=8:attack=40:release=600:makeup=1[ducked]")
+    # duck_db 越大压得越狠：映射到侧链压缩比（阈值固定在旁白电平之下）
+    ratio = 2 if abs(duck_db) <= 4 else 4 if abs(duck_db) <= 8 else 8
+    fc.append(f"[bed][{reps}:a]sidechaincompress=threshold=0.03:ratio={ratio}:attack=40:release=500:makeup=1[ducked]")
     fc.append(f"[ducked][{reps}:a]amix=inputs=2:duration=first:normalize=0[aout]")
     cmd = ["ffmpeg", "-y", "-v", "error"] + ins + ["-i", dry, "-filter_complex", ";".join(fc),
            "-map", f"{reps}:v", "-map", "[aout]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", out]
