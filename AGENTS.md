@@ -61,11 +61,16 @@ python3 ~/.claude/skills/h3-film-studio/scripts/fl2v_build.py      # fl2v 首尾
 - 锚定参考图固定不换（如 `REF_XM.png` / `REF_PJ.png`）
 - 文字锁不住衣服剪裁和脸几何 —— 每张图独立生成必飘
 
+### 提示词（2026-08-25 定，优先级最高）
+- **所有 H3 prompt 必须由 `scripts/h3_prompt_compiler.py` 生成**，禁止手写自由文本（三天血泪的真根因，见 `reference/h3-prompt-official-digest.md`）
+- 台词只能在 `<d>[Chinese] …</d>` 里，说话人 `(S1)`；**`<d>` 之外一个中文字都不许有**
+- 静默镜：不给 `(Sx)`，写官方句 `lips remain completely closed`，soundscape 只写环境声
+- 官方原文：`reference/official/VIDEO_PROMPT_WRITING_GUIDE_{base,ref}_en.md`
+
 ### 音频
 - **必须 H3 原生音画同出**（`audio_mode=native`），**禁止 TTS 外部配音**
 - T8 multi-rate：`video_steps=4` / `audio_steps=8`（turbo 一刀切会糊音频）
-- **中文只用来写「台词」**；舞台指示/表演提示**写英文**
-  （H3 会把 prompt 里任何中文句子念出来甚至烧成字幕）
+- 中文只在 `<d>` 里（见上「提示词」节）
 - **禁止合成噪声**（anoisesrc）冒充环境音
 
 ### 字幕

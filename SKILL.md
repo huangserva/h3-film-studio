@@ -15,8 +15,35 @@ description: "视频生成 skill（H3/Krea 本地为主）。主题→意图→�
 - ❌ 坐↔站大变却 `gen_mode=i2v_solo`（必须 **fl2v 首尾** 或 **chain**）  
 - ❌ 用剪辑溶解掩盖姿态跳  
 - ❌ 直接复制 `/tmp/**/scratchpad` 旁路当主路径且不跑 preflight  
+- ❌ **合戏/抽送/骑乘/后入等动作镜不挂 Motion Booster**（见下方运动硬门）  
+- ❌ 交付前未做 **motion_mean + 抽帧穿帮验收**  
 
 **为什么会手搓、怎么解：** 见 [`reference/anti-handroll.md`](reference/anti-handroll.md)。
+
+---
+
+## 运动硬门（2026-08-29 用户纠正后强制）
+
+用户原话精神：**动作镜必须挂 Booster**；「为了真实就砍 Booster」= 流程失败。
+
+| 镜类 | LoRA | prompt 触发词 | motion_mean 验收 |
+|------|------|---------------|------------------|
+| **合戏/动作**（骑乘/后入/抽送/插入进行中） | HMNSFW **0.5** + Motion Booster **0.55–0.7**（+turbo 可叠） | `dynvt1`（垂直/女上）或 `dynfb1`（前后/后入）+ `hmmotion` | **≥2.8**；目标 **3.5–5.5**；&lt;2.8 必须重出 |
+| **文戏/铺垫**（走路、接吻、对峙、解衣过渡） | HMNSFW **0.3–0.35**，**禁止 Booster** | 勿写 dynvt1/dynfb1 | **1.2–2.5**；&lt;1.0 像静帧要重出 |
+
+- 「真实/克制」只改 **prompt 措辞与节奏词**（steady/rhythmic），**不许拆掉 Booster**。
+- 细节见 [`reference/nsfw-profile.md`](reference/nsfw-profile.md)、[`reference/hmnsfw-register.md`](hmnsfw-register.md)。
+
+---
+
+## 交付前强制验收（不过不交）
+
+每镜出片后、成片交付前：
+
+1. 记 `motion_mean`（`h3_i2v_shot.py` 已打印）——不合上表即重出。  
+2. 抽帧 **头/中/尾** 三帧：服装单向（脱了不许穿回）、脸是否漂、结合处是否按 INTENT。  
+3. 音轨：合戏 **禁 mute**；成片 loudnorm 统一，禁镜间音量乱跳。  
+4. 用户纠正写入 INTENT 原话后再改下一批。
 
 ---
 

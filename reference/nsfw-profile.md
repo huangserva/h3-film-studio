@@ -5,11 +5,17 @@ h3-film-studio 电影/剧情/成人合一，NSFW 走这个 profile。普通片�
 ## 三处开关
 
 1. **视频 LoRA 栈**（`providers.yaml` → `models.video.local_h3.loras`）
-   - 合戏段：`[["HMNSFW_AIO_V2.safetensors", 0.5], ["H3_Motion_Booster.safetensors", 0.6]]`（+ turbo 自动叠）
-   - 文戏/铺垫段：`[["HMNSFW_AIO_V2.safetensors", 0.35]]` 无 Booster（**走路/解衣挂 Booster 会抽搐**）
-   - 触发词：Booster 按运动轴 `dynvt1`（垂直/骑乘）/ `dynfb1`（前后/后入）写进 prompt
+   - **合戏/动作段（强制）**：`[["HMNSFW_AIO_V2.safetensors", 0.5], ["H3_Motion_Booster.safetensors", 0.6]]`（+ turbo 可叠）。**禁止**为「真实/克制」拆掉 Booster——那会造成慢动作/粘帧；克制只改 prompt 节奏词。
+   - **文戏/铺垫段**：`[["HMNSFW_AIO_V2.safetensors", 0.35]]` **无 Booster**（走路/接吻/对峙挂 Booster 会抽搐）
+   - **解衣过渡**：默认无 Booster；若用户明确要求「动作感」可轻度 0.35–0.45，并抽帧防抽搐
+   - 触发词：Booster 按运动轴 `dynvt1`（垂直/骑乘/女上）/ `dynfb1`（前后/后入）写进 prompt 段首
+   - **motion_mean 验收**：合戏 &lt;2.8 必须重出；目标 3.5–5.5（金瓶梅实证 3.6–6.3）
 2. **图片 LoRA**（`local_krea.lora`）：`krea2_lora 通行证刀斧手版.safetensors` @ 0.5（NSFW 静帧通行证）
 3. **prompt 规范**：合戏段走 register 八段式（见 [`hmnsfw-register.md`](hmnsfw-register.md)），文戏段走详尽正向描写
+
+### 用户纠正记录（必须遵守）
+
+- 2026-08-29：**「为什么不挂 booster？这个明明是动作的！」** → 动作/合戏镜强制 Booster，不得再砍。
 
 ## 身份锁（治男相漂移的关键）
 
