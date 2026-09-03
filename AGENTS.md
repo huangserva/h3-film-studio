@@ -2,6 +2,10 @@
 
 > 给 agent 的操作入口。**先读这份，再读 SKILL.md。**
 > 本文件是「指令层」；真正拦你的是「强制层」(PreToolUse hook)，见文末。
+>
+> **定位（2026-08-25 黄佬定）**：h3-film-studio 是 **H3Storyboard**（`~/development/H3Storyboard`，产品）的零件——规则、prompt 编译器、门禁脚本只在这里有一份。
+> H3Storyboard 通过 `@h3storyboard/film-studio-bridge` 调用本 skill（`scripts/h3_prompt_compiler.py --json`、`scripts/preflight_continuity.py`），**不得在产品里重写一份**。
+> 这里的脚本改了接口，桥接层的单测会红。
 
 ---
 

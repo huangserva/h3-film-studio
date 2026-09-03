@@ -36,7 +36,7 @@ non_diegetic_music: <配器/速度/动态；没有写 N/A>
 - **不出声的人不给编号。** 静默镜 = 没有任何 `(Sx)`、没有 `<d>`。
 - 画外音：`says in an off-screen voiceover: <d>…</d> while his lips remain completely closed.` —— **`lips remain completely closed` 是官方唯一的"闭嘴"句式**，静默镜借用它。
 - 台词跨切：`<scenetrans>`；被片尾截断：`<cutoff>`。
-- 密度仍然要守（2026-08-24 实证）：字/秒 ≥ 1.5，短台词加词或缩镜。A/B 的 A 组专门测"官方格式能不能免掉这条"。
+- 台词密度不再是硬规则：A 组实测（3 字台词配 10 秒镜）官方格式下不再乱码填空，念完就安静。短台词配长镜仍然会让画面"空"，那是导演问题，不是模型问题。
 
 ## 镜头与运镜
 

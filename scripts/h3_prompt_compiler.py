@@ -104,7 +104,42 @@ def density(lines: list[Line], frames: int) -> float:
     return n / (frames / FPS)
 
 
+def compile_spec(spec: dict) -> dict:
+    """JSON 接口（H3Storyboard 桥接层用）。spec 见 --json 说明。返回 {task, prompt, density}。"""
+    task = (spec.get("task") or "i2va").lower()
+    lines = [Line(**l) for l in (spec.get("lines") or [])]
+    common = dict(style=spec["style"], anchor=spec["anchor"], beats=list(spec.get("beats") or []),
+                  soundscape=spec["soundscape"], lines=lines or None,
+                  silent_subjects=spec.get("silent_subjects") or None,
+                  camera=spec.get("camera", "The camera holds a static shot"), music=spec.get("music", "N/A"))
+    if task == "fl2va":
+        frames = int(spec["frames"])
+        prompt = compile_fl2va(frames=frames, **common)
+    elif task == "i2va":
+        frames = int(spec.get("frames") or 124)
+        prompt = compile_i2va(**common)
+    else:
+        raise ValueError(f"unsupported task {task!r} (i2va|fl2va)")
+    return {"task": task, "prompt": prompt, "density": round(density(lines, frames), 3) if lines else 0.0}
+
+
 if __name__ == "__main__":
+    import argparse, json, sys
+    ap = argparse.ArgumentParser(description="H3 官方格式 prompt 编译器")
+    ap.add_argument("--json", action="store_true",
+                    help="从 stdin 读 spec JSON，stdout 输出 {task,prompt,density}；违规时 exit 2 + {error,message}。"
+                         " spec: {task:i2va|fl2va, frames, style, anchor, beats[], soundscape, lines[{speaker,who,verb,text,lang?,after?}], silent_subjects[], camera?, music?}")
+    args = ap.parse_args()
+    if args.json:
+        try:
+            spec = json.load(sys.stdin)
+            print(json.dumps(compile_spec(spec), ensure_ascii=False))
+        except ValueError as e:
+            code = "CHINESE_OUTSIDE_D" if "<d> 之外出现中文" in str(e) else "INVALID_SPEC"
+            print(json.dumps({"error": code, "message": str(e)}, ensure_ascii=False)); sys.exit(2)
+        except KeyError as e:
+            print(json.dumps({"error": "INVALID_SPEC", "message": f"missing field {e}"}, ensure_ascii=False)); sys.exit(2)
+        sys.exit(0)
     ROOM = "in a candlelit Ming-dynasty bedchamber with a red lacquered canopy bed, white gauze curtains, and bronze candlesticks"
     p = compile_i2va(
         style="Live-action, cinematic",

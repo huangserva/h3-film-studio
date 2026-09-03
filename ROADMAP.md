@@ -90,6 +90,8 @@
 
 ## Phase 4 · 画布 / 产品化（H3Storyboard M1）
 
+> **2026-08-25 已接第一根线**：H3Storyboard 新增 `packages/film-studio-bridge`，解析本 skill 目录、调编译器与 preflight、记录 skill git 版本；ADR 0003 把本 skill 定为**组件依赖**（对比 ADR 0002 把 director 只当政策参考）。M1 worker 出 prompt 只能走这条桥。
+
 把产线装进产品。H3Storyboard 已有 M0（protocol / SQLite / 本地 API / Studio 壳），缺的 M1 正是我们已经打通的东西：
 
 1. **M1 = 真 ComfyUI worker**：把 A 线的 H3/Krea 调用接进 task-engine（submit-and-poll）

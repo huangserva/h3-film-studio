@@ -348,3 +348,7 @@ python3 scripts/run_pipeline.py \
 - `examples/sample_output/compose_result.json`
 
 当前仓库的主入口和主合同，已经切到 `SKILL.md` + `scripts/run_pipeline.py`。
+
+## 与 H3Storyboard 的关系
+
+本 skill 是 [H3Storyboard](https://github.com/huangserva/H3Storyboard) 的规则与脚本组件。产品侧通过 `@h3storyboard/film-studio-bridge` 调用这里的 `scripts/h3_prompt_compiler.py --json` 与 `scripts/preflight_continuity.py`；规则只在本仓库维护一份。
