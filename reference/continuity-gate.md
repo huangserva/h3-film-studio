@@ -114,3 +114,9 @@
 ## 5. 最小 shot_table 模板
 
 见 `templates/shot_table.template.json`。
+
+## 多场景片（2026-09-03 买鸟记加入）
+
+- `shot_table.json` 顶层可写 `"pose_keys": ["father","mother","girl"]`，门禁按此检查每镜 `start/end` 的姿态键（默认仍是 `man/woman`）。
+- 某镜写 `"scene_cut": true` = 进入该镜是**有意的跨场硬切**（换地点/换时间），门禁跳过与上一镜的 `end==start` 与 chain 连续性检查；镜内坐↔站大变仍按 `--strict-pose-change` 拦。
+- 用 `scene_cut` 的前提：INTENT 里写明"每镜独立场景"。同一场景内的相邻镜**不许**用它掩盖姿态跳。

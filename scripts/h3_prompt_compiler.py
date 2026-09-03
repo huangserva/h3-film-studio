@@ -38,7 +38,8 @@ class Line:
             t += "。"
         s = f"{self.who} ({self.speaker}) {self.verb}: <d>[{self.lang}] {t}</d>"
         if self.after:
-            s += f" {self.after.strip()}"
+            a = self.after.strip().rstrip(".")
+            s += f" {a}."
         return s
 
 

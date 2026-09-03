@@ -5,6 +5,9 @@ Usage:
   python3 preflight_continuity.py --table /path/to/shot_table.json
   python3 preflight_continuity.py --table shot_table.json --strict-pose-change
 
+Table options: "pose_keys": [...] (default man/woman); per-shot "scene_cut": true skips the
+junction check into that shot (deliberate scene change; INTENT must say so).
+
 Exit 0 = OK to generate. Exit 1 = must fix table first.
 """
 from __future__ import annotations
@@ -43,6 +46,9 @@ def check(table: dict[str, Any], *, strict_pose_change: bool) -> list[str]:
     shots = table["shots"]
     if len(shots) < 1:
         return ["shots[] is empty"]
+    # 项目可自定义角色键（多场景/多人物片）；默认 man/woman
+    pose_keys = tuple(table.get("pose_keys") or POSE_KEYS_DEFAULT)
+    compare_keys = tuple(dict.fromkeys(pose_keys + ("prop_silver", "blocking")))
 
     for i, sh in enumerate(shots):
         sid = sh.get("id", f"index_{i}")
@@ -53,7 +59,7 @@ def check(table: dict[str, Any], *, strict_pose_change: bool) -> list[str]:
         if not isinstance(start, dict) or not isinstance(end, dict):
             errors.append(f"{sid}: start/end must be objects")
             continue
-        for who in POSE_KEYS_DEFAULT:
+        for who in pose_keys:
             if who not in start or who not in end:
                 errors.append(f"{sid}: start/end must include `{who}` pose")
 
@@ -63,7 +69,7 @@ def check(table: dict[str, Any], *, strict_pose_change: bool) -> list[str]:
             errors.append(f"{sid}: gen_mode={mode!r} not in {sorted(allowed)}")
 
         # big pose change inside shot → cannot be solo independent i2v
-        changed = any(pose_changed(start, end, w) for w in POSE_KEYS_DEFAULT)
+        changed = any(pose_changed(start, end, w) for w in pose_keys)
         if changed and mode in ("i2v_solo",):
             errors.append(
                 f"{sid}: pose changes inside shot (sit/stand/…) but gen_mode=i2v_solo; "
@@ -83,7 +89,10 @@ def check(table: dict[str, Any], *, strict_pose_change: bool) -> list[str]:
         a, b = shots[i], shots[i + 1]
         aid, bid = a.get("id", i), b.get("id", i + 1)
         ae, bs = a.get("end") or {}, b.get("start") or {}
-        for key in STATE_KEYS_COMPARE:
+        if b.get("scene_cut"):
+            # 有意的跨场硬切（换地点/换时间）：不要求起止连续。INTENT 必须写明"每镜独立场景"。
+            continue
+        for key in compare_keys:
             if key in ae and key in bs and ae[key] != bs[key]:
                 errors.append(
                     f"JUNCTION {aid}→{bid}: end.{key}={ae[key]!r} != start.{key}={bs[key]!r} "
@@ -91,7 +100,7 @@ def check(table: dict[str, Any], *, strict_pose_change: bool) -> list[str]:
                 )
         # chain target should match previous end physically
         if b.get("gen_mode") == "chain" or b.get("chain_from_previous"):
-            for who in POSE_KEYS_DEFAULT:
+            for who in pose_keys:
                 if who in ae and who in bs and ae[who] != bs[who]:
                     errors.append(
                         f"JUNCTION {aid}→{bid}: chain shot but {who} pose breaks "
