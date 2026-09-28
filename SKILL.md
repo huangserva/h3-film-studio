@@ -6,6 +6,7 @@ description: "视频生成 skill（H3/Krea 本地为主）。主题→意图→�
 # h3-film-studio
 
 > 成人/剧情/电影共用本 skill。旧 `adult-krea2-h3-narrative` 仅作历史参考，**新片只认本目录**。
+> agent 先读 [`AGENTS.md`](AGENTS.md)（执行顺序、机器环境、硬规矩），再读本文件。
 
 ## 违禁清单（出现即流程失败）
 
@@ -17,6 +18,8 @@ description: "视频生成 skill（H3/Krea 本地为主）。主题→意图→�
 - ❌ 直接复制 `/tmp/**/scratchpad` 旁路当主路径且不跑 preflight  
 - ❌ **合戏/抽送/骑乘/后入等动作镜不挂 Motion Booster**（见下方运动硬门）  
 - ❌ 交付前未做 **motion_mean + 抽帧穿帮验收**  
+- ❌ **手写 H3 prompt**，或者把分镜里的中文描述直接发给 H3（必须经编译器，见步骤0.6）  
+- ❌ 用继承自 xyz 的一键流程（`ad_assets.py` → `local_h3`）出正式镜头：这条路不经过编译器，也没接 T8 音频  
 
 **为什么会手搓、怎么解：** 见 [`reference/anti-handroll.md`](reference/anti-handroll.md)。
 
@@ -79,6 +82,64 @@ python3 ~/.claude/skills/h3-film-studio/scripts/preflight_continuity.py \
 
 ---
 
+## 步骤0.6（强制）：H3 prompt 只能由编译器生成
+
+**送进 H3 的每一条 prompt 都必须由 `scripts/h3_prompt_compiler.py` 生成，禁止手写。** 2026-08-25 的 6 组对照实验证实，台词乱码、字幕烧进画面、不说话的镜头人物嘴在动，这三个问题的根因都是 prompt 没按 MiniMax 官方格式写。
+
+- 官方原文：`reference/official/`，来自 MiniMax-AI/MiniMax-H3 仓库的 h3-prompt-writing skill（2026-09-28 与官方仓库逐字核对过，两份写作指南一致）
+- 中文要点：[`reference/h3-prompt-official-digest.md`](reference/h3-prompt-official-digest.md)
+
+官方格式有三条硬要求，编译器会替你做到：
+
+1. 第一行是官方固定的对齐句（I2VA 和 FL2VA 各有一句），空一行后接 `integrated_multimodal_description`、`overall_soundscape`、`non_diegetic_music` 三段。Ref2VA 用官方的六段格式。
+2. 正文全部用英文。中文只能出现在 `<d>[Chinese] …</d>` 台词里，`<d>` 外面出现任何中文，编译器直接报错退出。
+3. 说话的人按 `(S1)`、`(S2)` 编号；不说话的人不编号，写进 `silent_subjects`，编译器会补上官方的闭嘴句。
+
+**用法**：每镜写一份 spec JSON（中文只放在 `lines[].text`）：
+
+```json
+{
+  "task": "i2va",
+  "frames": 124,
+  "style": "Live-action, cinematic",
+  "anchor": "a medium shot frames the young woman in a white robe shown in <Picture 1> seated at a table in a candlelit bedchamber, preserving her appearance, clothing, and position",
+  "beats": ["She lowers her eyes and grips the edge of the table", "She lifts her head toward the door as the line ends"],
+  "lines": [{"speaker": "S1", "who": "The young woman with a soft, trembling voice", "verb": "says", "text": "官人怎么这个时候来了，外面还下着雨呢。"}],
+  "silent_subjects": [],
+  "soundscape": "Quiet indoor room tone with a faint candle flicker and steady rain outside continues throughout.",
+  "camera": "The camera holds a static shot",
+  "music": "N/A"
+}
+```
+
+```bash
+python3 ~/.claude/skills/h3-film-studio/scripts/h3_prompt_compiler.py --json \
+  < shots/s01.spec.json > shots/s01.compiled.json
+python3 -c 'import json; d=json.load(open("shots/s01.compiled.json")); print("density", d["density"]); open("shots/s01.prompt.txt","w").write(d["prompt"])'
+# 出片：h3_t8_shot.py 会拒收不是官方格式的 prompt
+python3 ~/.claude/skills/h3-film-studio/scripts/h3_t8_shot.py --start kw/s01.png \
+  --prompt-file shots/s01.prompt.txt --frames 124 --out shots/
+```
+
+- `anchor` 描述的必须是母图里真实看得见的画面：谁、在哪、什么景别。
+- `beats` 按时间先后写动作，每条一句英文。台词会自动插在第一条 beat 之后。
+- 输出里的 `density` 是台词密度（字/秒）。有台词的镜头低于 1.5 时，H3 会用乱码音节把空出来的时间填满，要么加台词，要么缩短镜头。
+- 编译器出错时 exit 2，并输出 `{error, message}`；`CHINESE_OUTSIDE_D` 表示 `<d>` 外面有中文。
+
+**编译器支持哪些模式**（官方一共五种，外加 Director 的改视频模式）：
+
+| 官方模式 | 含义 | spec 的 `task` | 出片脚本 |
+|---|---|---|---|
+| I2VA | 给一张首帧图，往后生成 | `i2va` | `h3_t8_shot.py --task i2va` |
+| FL2VA | 给首尾两张图，H3 补中间 | `fl2va`（必须给 `frames`） | `h3_t8_shot.py --task fl2va --end <尾帧>` |
+| Ref2VA | 给多张参考图锁人物 | `ref2va`（必须给 `subjects`） | 本 skill 暂无单镜脚本，H3Storyboard 的 r2v 任务在用 |
+| T2VA / L2VA | 纯文字出片 / 只给尾帧倒推开头 | 不支持 | — |
+| v2v / rv2v | 拿原视频改（Director 复刻） | 不支持 | — |
+
+要用编译器不支持的模式时，先告诉用户编译器还没覆盖，再按 `reference/official/` 原文的结构逐段写，写完检查 `<d>` 外面没有中文。
+
+---
+
 ## 触发条件
 用户提到"生成视频"、"广告片"、"短片"、"商业视频"、"产品广告"、"做一个视频"等关键词。
 
@@ -119,14 +180,14 @@ python3 ~/.claude/skills/h3-film-studio/scripts/preflight_continuity.py \
 - 质量审查是主流程的一部分
 - 编辑决策也是主流程的一部分
 - 不能再把 compose 理解成”按每个 shot 的 transition_in 直接拼起来”
-- 当前视频生成 provider 主路径以 Ark Seedance 2.0 为主；对你来说，storyboard 现在应优先按 `video_references` 的用途协议来约束视频，而不是把“首帧 / 尾帧 / keyframes”当成唯一主结构
+- 本 skill 默认视频后端是本地 H3（`config/providers.yaml` 的 `local_h3`），Seedance 只作备用。H3 的视频 prompt 一律走步骤0.6 的编译器；storyboard 里的 `video_references` 用途协议仍用来规划参考图，但它的中文描述不直接发给 H3
 
 ```
 步骤1: 故事创作              → 你与用户对话讨论方向，输出 story.json
 步骤2: 剧本框架 + 角色设计    → 你思考，输出 framework.json（从 narrative 切分 scenes + 设计角色）
 步骤3: 角色参考图生成        → python3 scripts/ad_assets.py --mode character_refs
 步骤4: 分镜脚本              → 你思考，输出 storyboard.json（scenes > shots，从 narrative 派生）
-步骤4.5: 导演写帧级 prompt    → 你思考，输出 director_prompts.json（逐帧画面描述）
+步骤4.5: 导演写帧级 prompt    → 你思考，输出 director_prompts.json（母图画面描述）+ 每镜 H3 spec → 编译器出视频 prompt
 步骤5: 素材生成              → python3 scripts/ad_assets.py [--review-mode director_review]
 步骤5.5: 导演审图（可选）     → 你查看生成的图片，判断 keep/regenerate
 步骤6: 编辑决策 + 视频合成    → python3 scripts/ad_compose.py
@@ -331,6 +392,8 @@ narrative 的自然切分点：
 - 字节 Seedance 视频链路支持中文，所以 storyboard 和视频提示词文件不再默认使用英文
 - 以后只要是视频生成相关的文本描述，默认都写中文
 - 不要再把“英文 prompt 习惯”带回 storyboard 主文件
+
+> **走 H3 时的例外（2026-09-28）**：上面这些中文字段是给人看的计划，不直接发给 H3。送进 H3 的视频 prompt 正文必须是英文，只能由编译器生成（见步骤0.6），中文台词放在 spec 的 `lines[].text` 里。"Seedance 支持中文"这一条只在切回 Seedance 后端时适用。
 
 **示例：**
 - ❌ `"appearance": "一个蓝色的机器人"`
@@ -1293,6 +1356,8 @@ Seedance 1.5 Pro 支持音画同轨生成（`generate_audio: true`），narratio
 - 纯动作/氛围类：留空 `""`
 - narration 过长会导致语速过快读不完，严格控制字数
 
+> **走 H3 时（2026-09-28）**：旁白不拼进 prompt，写成 spec 的一条 `lines`，`verb` 用 `says in an off-screen voiceover`（《买鸟记》15 镜验证过），画面里的人写进 `silent_subjects` 保持闭嘴。字数下限按编译器输出的 `density` 控制，低于 1.5 字/秒会出乱码。
+
 ### 4.10 consistency_anchors（一致性锚点）
 
 每个 shot 必须声明"必须出现的视觉元素"，这些锚点会被注入到图片和视频 prompt 中，强制保证一致性。
@@ -1510,6 +1575,12 @@ scene_prompt（起始状态）→ action_prompt（运动过程）→ end_frame_d
 
 ## 步骤 4.5: 导演写帧级 prompt（核心新增）
 
+> **走 H3 时这一步出两份东西（2026-09-28 改）：**
+>
+> 1. `director_prompts.json` 里的 `first_frame`、`last_frame`、`keyframes` 只用来出母图（Krea / Qwen-Edit），写法照下文。
+> 2. 下文示例里的 `video_action` 是 Seedance 后端用的中文视频描述，**不要发给 H3**。H3 每镜另写一份 `shots/<id>.spec.json`（字段见步骤0.6），由编译器生成英文 prompt。`video_action` 想表达的画面意图，翻成英文拆进 spec：首帧画面里有谁、在哪、什么景别写进 `anchor`，按时间先后发生的动作写进 `beats`，台词写进 `lines`。
+> 3. 母图和 spec 必须对得上：`anchor` 只写母图里真实看得见的东西；没有台词的镜头，母图里的人必须闭嘴，否则 H3 会自己配乱码语音和字幕。
+
 **思考在母模型脑子里完成，不甩给生图模型。**
 
 你（母模型）是导演。你设计了每个 shot 的姿态、情绪、构图、视线——这些画面在你脑子里。你应该把脑子里看到的画面用精确的语言写出来，交给生图模型执行。
@@ -1589,6 +1660,7 @@ scene_prompt（起始状态）→ action_prompt（运动过程）→ end_frame_d
 |------|--------|--------|
 | storyboard.json | 故事 + 约束 + 结构 + 连续性事实 | 生成计划 + 审片检查清单 |
 | director_prompts.json | 每一帧的精确画面描述 | 图片生成的直接输入 |
+| shots/<id>.spec.json | 每镜 H3 视频 prompt 的结构化输入（英文，台词中文） | 编译器 → `h3_t8_shot.py` |
 
 - storyboard 回答"这个 shot 要做什么、有什么约束"
 - director_prompts 回答"这一帧画面上到底长什么样"
